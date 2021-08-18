@@ -2,13 +2,15 @@ const BASE_URL = "https://jsonplace-univclone.herokuapp.com";
 
 function fetchUsers() {
   return fetch(BASE_URL)
-    .then(function (response) {
+    .then((response) => {
       return response.json();
     })
-    .then(function (response) {
+    .then((response) => {
       console.log(response, "This should be the data in a usable form");
     })
-    .catch(function (error) {
+    .catch((error) => {
       console.error(error);
     });
 }
+
+fetchUsers();
