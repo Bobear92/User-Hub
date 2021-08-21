@@ -1,16 +1,7 @@
 const BASE_URL = "https://jsonplace-univclone.herokuapp.com";
 
-function fetchUsers(BASE_URL) {
-  fetch(BASE_URL)
-    .then((data) => {
-      return data.json();
-    }) // convert to json
-    .then((data) => {
-      console.log(data);
-    })
-    .catch((error) => {
-      console.error(error);
-    });
+function fetchUsers(Url) {
+  return fetchData(`${Url}/users`);
 }
 
 function renderUser(user) {
@@ -20,14 +11,18 @@ function renderUser(user) {
   </header>
   <section class="company-info">
     <p><b>Contact:</b> ${user.email}</p>
-    <p><b>Works for:</b> Romaguera-Crona</p>
-    <p><b>Company creed:</b> "Multi-layered client-server neural-net, which will harness real-time e-markets!"</p>
+    <p><b>Works for:</b> ${user.company.name}</p>
+    <p><b>Company creed:</b> ${user.company.catchPhrase}</p>
   </section>
   <footer>
-    <button class="load-posts">POSTS BY Bret</button>
-    <button class="load-albums">ALBUMS BY Bret</button>
+    <button class="load-posts">POSTS BY ${user.username}</button>
+    <button class="load-albums">ALBUMS BY ${user.username}</button>
   </footer>
 </div>`);
+
+  element.find(".load-posts, .load-albums").data("user", user);
+
+  return element;
 }
 
 function renderUserList(userList) {
@@ -35,7 +30,7 @@ function renderUserList(userList) {
 
   for (let i = 0; i < userList.length; i++) {
     let userObj = userList[i];
-    $("#user-list").append(renderCard(userObj));
+    $("#user-list").append(renderUser(userObj));
   }
 }
 
@@ -43,5 +38,164 @@ function bootstrap() {
   // move the line about fetchUsers into here
   fetchUsers(BASE_URL).then(renderUserList);
 }
-
 bootstrap();
+
+$("#user-list").on("click", ".user-card .load-posts", function () {
+  // load posts for this user
+  // render posts for this user
+  let data = $(this).data("user");
+  console.log(data);
+});
+
+$("#user-list").on("click", ".user-card .load-albums", function () {
+  // load albums for this user
+  // render albums for this user
+  let data = $(this).data("user");
+  fetchUserAlbumList(data.id).then(renderAlbumList);
+});
+
+// module 2
+
+/* get an album list, or an array of albums */
+function fetchUserAlbumList(userId) {
+  return fetchData(
+    `${BASE_URL}/users/${userId}/albums?_expand=user&_embed=photos`
+  );
+}
+
+function fetchData(url) {
+  return fetch(url)
+    .then((data) => {
+      return data.json();
+    })
+    .catch((error) => console.error(error));
+}
+
+/* render a single album */
+function renderAlbum(album) {
+  let element = `<div class="album-card">
+  <header>
+    <h3>${album.title}, by ${album.user.username} </h3>
+  </header>
+  <section class="photo-list">
+    <div class="photo-card"></div>
+    <div class="photo-card"></div>
+    <div class="photo-card"></div>
+    <!-- ... -->
+  </section>
+</div>`;
+
+  for (let i = 0; i < album.photos.length; i++) {
+    let value = album.photos[i];
+
+    $(".photo-list").append(renderPhoto(value));
+  }
+
+  return element;
+}
+
+/* render a single photo */
+function renderPhoto(photo) {
+  let element = `<div class="photo-card">
+  <a href="${photo.url}" target="_blank">
+    <img src="${photo.thumbnailUrl}">
+    <figure>${photo.title}>
+  </a>
+</div>`;
+
+  return element;
+}
+
+/* render an array of albums */
+function renderAlbumList(albumList) {
+  $("#app section.active").removeClass("active");
+  $("#album-list").addClass("active").empty();
+
+  for (let i = 0; i < albumList.length; i++) {
+    let element = albumList[i];
+    $("#album-list").append(renderAlbum(element));
+  }
+}
+
+// module 3
+
+function fetchUserPosts(userId) {
+  return fetchData(`${BASE_URL}/users/${userId}/posts?_expand=user`);
+}
+
+function fetchPostComments(postId) {
+  return fetchData(`${BASE_URL}/posts/${postId}/comments`);
+}
+
+function setCommentsOnPost(post) {
+  // post.comments might be undefined, or an []
+  // if undefined, fetch them then set the result
+  // if defined, return a rejected promise
+
+  // if we already have comments, don't fetch them again
+  if (post.comments) {
+    // #1: Something goes here
+    return Promise.reject(null);
+  }
+
+  // fetch, upgrade the post object, then return it
+  return fetchPostComments(post.id).then(function (comments) {
+    post.comments = comments;
+    return post;
+  });
+}
+
+fetchUserPosts(1).then(console.log); // why does this work?  Wait, what?
+
+fetchPostComments(1).then(console.log); // again, I'm freaking out here! What gives!?
+
+function renderPost(post) {
+  let element = `<div class="post-card">
+  <header>
+    <h3>${post.title}</h3>
+    <h3>--- ${post.user.username}</h3>
+  </header>
+  <p>${post.body}</p>
+  <footer>
+    <div class="comment-list"></div>
+    <a href="#" class="toggle-comments">(<span class="verb">show</span> comments)</a>
+  </footer>
+</div>`;
+
+  return element;
+}
+
+function renderPostList(postList) {
+  $("#app section.active").removeClass("active");
+  $("#post-list").addClass("active").empty();
+
+  for (let i = 0; i < postList.length; i++) {
+    let element = postList[i];
+    $("#post-list").append(renderPost(element));
+  }
+}
+
+function toggleComments(postCardElement) {
+  const footerElement = postCardElement.find("footer");
+
+  if (footerElement.hasClass("comments-open")) {
+    footerElement.removeClass("comments-open");
+    footerElement.find(".verb").text("show");
+  } else {
+    footerElement.addClass("comments-open");
+    footerElement.find(".verb").text("hide");
+  }
+}
+
+$("#post-list").on("click", ".post-card .toggle-comments", function () {
+  const postCardElement = $(this).closest(".post-card");
+  const post = postCardElement.data("post");
+
+  setCommentsOnPost(post)
+    .then(function (post) {
+      console.log("building comments for the first time...", post);
+    })
+    .catch(function () {
+      console.log("comments previously existed, only toggling...", post);
+    });
+});
