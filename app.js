@@ -140,6 +140,9 @@ function renderPost(post) {
   </footer>
 </div>`;
 
+  // element.find(".toggle-comments");
+  // element.data("post", post);
+
   return element;
 }
 
@@ -168,23 +171,39 @@ function toggleComments(postCardElement) {
 $("#post-list").on("click", ".post-card .toggle-comments", function () {
   const postCardElement = $(this).closest(".post-card");
   const post = postCardElement.data("post");
+  const commentListElement = postCardElement.find(".comments-list");
 
-  fetchPostComments(post);
+  console.log(post);
 
   setCommentsOnPost(post)
     .then(function (post) {
-      postCardElement.hasClass(".comment-list").empty();
+      commentListElement.empty();
 
       for (let i = 0; i < post.comments.length; i++) {
         let value = post.comments[i];
 
         let newH3 = `<h3>${comments.body} ${comments.email}</h3>`;
         value.prepend(newH3);
-
-        toggleComments(postCardElement);
       }
+      toggleComments(postCardElement);
     })
     .catch(function () {
       toggleComments(postCardElement);
     });
 });
+
+function setCommentsOnPost(post) {
+  // if we already have comments, don't fetch them again
+
+  if (post.comments) {
+    // #1: Something goes here
+    return Promise.reject(null);
+  }
+
+  // fetch, upgrade the post object, then return it
+  return fetchPostComments(post.id).then(function (comments) {
+    // #2: Something goes here
+    post.comments = comments;
+    return post;
+  });
+}
