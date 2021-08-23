@@ -44,7 +44,7 @@ $("#user-list").on("click", ".user-card .load-posts", function () {
   // load posts for this user
   // render posts for this user
   let data = $(this).data("user");
-  console.log(data);
+  fetchUserPosts(data.id).then(renderPostList);
 });
 
 $("#user-list").on("click", ".user-card .load-albums", function () {
@@ -127,28 +127,6 @@ function fetchPostComments(postId) {
   return fetchData(`${BASE_URL}/posts/${postId}/comments`);
 }
 
-function setCommentsOnPost(post) {
-  // post.comments might be undefined, or an []
-  // if undefined, fetch them then set the result
-  // if defined, return a rejected promise
-
-  // if we already have comments, don't fetch them again
-  if (post.comments) {
-    // #1: Something goes here
-    return Promise.reject(null);
-  }
-
-  // fetch, upgrade the post object, then return it
-  return fetchPostComments(post.id).then(function (comments) {
-    post.comments = comments;
-    return post;
-  });
-}
-
-fetchUserPosts(1).then(console.log); // why does this work?  Wait, what?
-
-fetchPostComments(1).then(console.log); // again, I'm freaking out here! What gives!?
-
 function renderPost(post) {
   let element = `<div class="post-card">
   <header>
@@ -191,11 +169,22 @@ $("#post-list").on("click", ".post-card .toggle-comments", function () {
   const postCardElement = $(this).closest(".post-card");
   const post = postCardElement.data("post");
 
+  fetchPostComments(post);
+
   setCommentsOnPost(post)
     .then(function (post) {
-      console.log("building comments for the first time...", post);
+      postCardElement.hasClass(".comment-list").empty();
+
+      for (let i = 0; i < post.comments.length; i++) {
+        let value = post.comments[i];
+
+        let newH3 = `<h3>${comments.body} ${comments.email}</h3>`;
+        value.prepend(newH3);
+
+        toggleComments(postCardElement);
+      }
     })
     .catch(function () {
-      console.log("comments previously existed, only toggling...", post);
+      toggleComments(postCardElement);
     });
 });
