@@ -128,7 +128,7 @@ function fetchPostComments(postId) {
 }
 
 function renderPost(post) {
-  let element = `<div class="post-card">
+  let element = $(`<div class="post-card">
   <header>
     <h3>${post.title}</h3>
     <h3>--- ${post.user.username}</h3>
@@ -138,10 +138,10 @@ function renderPost(post) {
     <div class="comment-list"></div>
     <a href="#" class="toggle-comments">(<span class="verb">show</span> comments)</a>
   </footer>
-</div>`;
+</div>`);
 
   // element.find(".toggle-comments");
-  // element.data("post", post);
+  element.data("post", post);
 
   return element;
 }
@@ -171,9 +171,7 @@ function toggleComments(postCardElement) {
 $("#post-list").on("click", ".post-card .toggle-comments", function () {
   const postCardElement = $(this).closest(".post-card");
   const post = postCardElement.data("post");
-  const commentListElement = postCardElement.find(".comments-list");
-
-  console.log(post);
+  const commentListElement = postCardElement.find(".comment-list");
 
   setCommentsOnPost(post)
     .then(function (post) {
@@ -182,8 +180,8 @@ $("#post-list").on("click", ".post-card .toggle-comments", function () {
       for (let i = 0; i < post.comments.length; i++) {
         let value = post.comments[i];
 
-        let newH3 = `<h3>${comments.body} ${comments.email}</h3>`;
-        value.prepend(newH3);
+        let newH3 = $(`<h3>${value.body} ${value.email}</h3>`);
+        commentListElement.prepend(newH3);
       }
       toggleComments(postCardElement);
     })
